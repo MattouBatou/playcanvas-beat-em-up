@@ -1,0 +1,44 @@
+{
+  "name": "playcanvas-typescript-test",
+  "version": "1.0.0",
+  "author": "Matthew Lewis",
+  "homepage": "https://mattoubatou.com",
+  "description": "Test using playcanvas sync with typescript template.",
+  "keywords": [
+    "typescript",
+    "3D",
+    "2D",
+    "VR",
+    "WebGL",
+    "WebGL2",
+    "game",
+    "engine",
+    "HTML5",
+    "browser",
+    "typings"
+  ],
+  "main": "build/main.bundle.js",
+  "scripts": {
+    "build:debug": "tsc --project tsconfig.debug.json",
+    "build:release": "tsc --project tsconfig.release.json",
+    "watch:debug": "tsc --watch --project tsconfig.debug.json",
+    "watch:release": "tsc --watch --project tsconfig.release.json",
+    "push": "node node_modules/playcanvas-sync/bin/pcsync.js pushAll --yes",
+    "pull": "node node_modules/playcanvas-sync/bin/pcsync.js pullAll --yes",
+    "rename": "node node_modules/playcanvas-sync/bin/pcsync.js rename",
+    "build-push:debug": "npm run build:debug && npm run push",
+    "build-push:release": "npm run build:release && npm run push",
+    "watch-push:debug": "npm run build:debug && tsc-watch -p tsconfig.debug.json --onSuccess \"npm run push\"",
+    "watch-push:release": "npm run build:release && tsc-watch -p tsconfig.release.json --onSuccess \"npm run push\""
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/webxr": "^0.5.5",
+    "playcanvas": "^1.66.1",
+    "playcanvas-sync": "git+https://github.com/playcanvas/playcanvas-sync.git",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "tsc-watch": "^6.0.4"
+  }
+}
