@@ -10,6 +10,7 @@ class CharacterController extends pc.ScriptType {
     jumpVel: number = 0;
     fallSpeed: number = 3; // NOTE(matt): This should be a gravity value that will be added later.
     moveDir: pc.Vec2;
+    jumpDir: number = 0;
 
     leftTouchButton: pc.Entity;
     rightTouchButton: pc.Entity;
@@ -19,6 +20,9 @@ class CharacterController extends pc.ScriptType {
     jumpTouchButton: pc.Entity;
 
     wasJumpTouchButtonPressed = false;
+
+    right_jab_active = false;
+    right_jab_timer = 0;
 
     initialize(): void {
         if(!this.leftTouchButton.button) {
@@ -100,20 +104,27 @@ class CharacterController extends pc.ScriptType {
         }
 
         // Digital Movement
-        if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_LEFT) || this.app.keyboard.isPressed(pc.KEY_A)) {
-            this.moveDir.x = -1;
-            this.isFacingRight = false;
-        }
-        else if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_RIGHT) || this.app.keyboard.isPressed(pc.KEY_D)) {
-            this.moveDir.x = 1;
-            this.isFacingRight = true;
-        }
+        if(this.isGrounded && !this.right_jab_active) {
+            if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_LEFT) || this.app.keyboard.isPressed(pc.KEY_A)) {
+                this.moveDir.x = -1;
+                this.isFacingRight = false;
+            }
+            else if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_RIGHT) || this.app.keyboard.isPressed(pc.KEY_D)) {
+                this.moveDir.x = 1;
+                this.isFacingRight = true;
+            }
 
-        if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_UP) || this.app.keyboard.isPressed(pc.KEY_W)) {
-            this.moveDir.y = -1;
-        }
-        else if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_DOWN) || this.app.keyboard.isPressed(pc.KEY_S)) {
-            this.moveDir.y = 1;
+            if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_UP) || this.app.keyboard.isPressed(pc.KEY_W)) {
+                this.moveDir.y = -1;
+            }
+            else if(this.app.gamepads.isPressed(pc.PAD_1, pc.PAD_DOWN) || this.app.keyboard.isPressed(pc.KEY_S)) {
+                this.moveDir.y = 1;
+            }
+
+            if(this.app.gamepads.wasPressed(pc.PAD_1, pc.PAD_FACE_1)) {
+                this.right_jab_active = true;
+                
+            }
         }
 
         if(this.isFacingRight) {
@@ -124,8 +135,11 @@ class CharacterController extends pc.ScriptType {
         }
 
         // Jumping
-        if(!this.isJumping && this.isGrounded && (this.app.keyboard.wasPressed(pc.KEY_SPACE) || this.wasJumpTouchButtonPressed || this.app.gamepads.wasPressed(pc.PAD_1, pc.PAD_FACE_2))) {
+        if( !this.isJumping && this.isGrounded && !this.right_jab_active &&
+            (this.app.keyboard.wasPressed(pc.KEY_SPACE) || this.wasJumpTouchButtonPressed || this.app.gamepads.wasPressed(pc.PAD_1, pc.PAD_FACE_2))) {
             this.isJumping = true;
+
+            this.jumpDir = this.moveDir.x;
         }
 
         // Jumping Logic
@@ -152,14 +166,28 @@ class CharacterController extends pc.ScriptType {
                 entityPos.y = 0;
                 this.entity.setPosition(entityPos);
 
+                this.jumpDir = 0;
                 this.isGrounded = true;
             }
         }
 
         if(!this.isGrounded) {
             this.jumpAmount += this.jumpVel;
-            this.moveDir.x *= 0.7;
+            this.moveDir.x = this.jumpDir * 0.7;
             this.moveDir.y = 0;
+        }
+
+        // Combat
+        if(this.right_jab_active && this.entity.anim) {
+            this.moveDir.set(0, 0);
+            this.right_jab_timer += dt;
+
+            console.log(this.right_jab_timer);
+
+            if(this.right_jab_timer >= (this.entity.anim.baseLayer.activeStateDuration / 2)*0.75) {
+                this.right_jab_timer = 0;
+                this.right_jab_active = false;
+            }
         }
 
         this.moveDir.normalize();
@@ -173,6 +201,8 @@ class CharacterController extends pc.ScriptType {
 
         this.entity.anim?.setBoolean('moving', this.isMoving && this.isGrounded);
         this.entity.anim?.setBoolean('jumping', (this.jumpAmount > 20));
+        this.entity.anim?.setBoolean('right_jab', this.right_jab_active);
+        
 
         entityPos.x = (this.moveSpeed * dt) * this.moveDir.x;
         entityPos.y = this.jumpVel * dt;
